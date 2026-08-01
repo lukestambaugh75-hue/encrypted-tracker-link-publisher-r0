@@ -1,6 +1,6 @@
 # Pre-publication audit
 
-Status: PUBLIC KGERATOR CIPHERTEXT PILOT; EMAIL AND SCHEDULE CUTOVER NOT AUTHORIZED
+Status: PUBLIC KEGERATOR CIPHERTEXT PILOT; SCHEDULE CUTOVER NOT AUTHORIZED
 
 This record begins before the repository has a remote or Pages configuration.
 Complete it with live evidence immediately before requesting Luke's publication
@@ -90,3 +90,18 @@ email was sent to Luke only with no CC or BCC. Gmail message
 recipient. The complete bearer link remains only in that email and the private
 mode-0600 receipt; it is not recorded in this repository. This test send did
 not activate or modify scheduled delivery.
+
+## Viewer UX upgrade evidence
+
+The generic encrypted viewer was upgraded on 2026-08-01 without changing the
+Kegerator envelope, audience path, complete emailed link, recipient, schedule,
+model, or tracker logic. The new viewer leads with the current recommendation,
+price metrics, three best-current-option cards, and scannable offer cards with
+expandable evidence instead of a wide technical table.
+
+Public commit `f0b902085acf847dbebe1a070ede534583387a34` deployed successfully
+in workflow run `30699935791`. The live existing magic link decrypted to the
+Kegerator dashboard with 24 offer cards and 27 retailer actions. Browser checks
+confirmed zero console errors, key removal from the address, successful
+same-tab refresh after key removal, and a locked screen in a new tab without
+the key. The public-tree scan passed before publication.
