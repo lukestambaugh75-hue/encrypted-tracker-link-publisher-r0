@@ -159,7 +159,11 @@ function detailValue(row, name) {
   return Object.prototype.hasOwnProperty.call(row.details || {}, name) ? row.details[name] : null;
 }
 
-function recommendationRows(rows) {
+function recommendationRows(rows, featuredRowIds = []) {
+  if (featuredRowIds.length) {
+    const byId = new Map(rows.map(row => [row.id, row]));
+    return featuredRowIds.map(id => byId.get(id)).filter(Boolean);
+  }
   const marked = rows.filter(row => /top|best|ready|recommend/i.test(row.status || ""));
   if (marked.length) return marked.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity)).slice(0, 3);
   return rows
@@ -291,12 +295,15 @@ function render(payload) {
 
   const prices = payload.rows.map(row => row.price).filter(value => typeof value === "number");
   const metrics = element("section", "metrics");
-  const metricValues = [
+  const defaultMetricValues = [
     ["Lowest current price", prices.length ? money(Math.min(...prices)) : "Not shown"],
     ["Current price range", prices.length ? `${money(Math.min(...prices))} – ${money(Math.max(...prices))}` : "Not shown"],
     ["Offers compared", payload.rows.length],
     ["Snapshot generated", readableDate(payload.generated_at)]
   ];
+  const metricValues = Array.isArray(payload.presentation?.metrics)
+    ? payload.presentation.metrics.map(metric => [metric.label, metric.value])
+    : defaultMetricValues;
   for (const [label, value] of metricValues) {
     const metric = element("div", "metric");
     metric.append(element("span", null, label), element("strong", null, value));
@@ -315,11 +322,11 @@ function render(payload) {
 
   const picksSection = element("section", "content-section");
   picksSection.append(
-    element("p", "eyebrow", "BEST CURRENT OPTIONS"),
-    element("h2", null, "Start with these")
+    element("p", "eyebrow", payload.presentation?.featured_eyebrow || "BEST CURRENT OPTIONS"),
+    element("h2", null, payload.presentation?.featured_title || "Start with these")
   );
   const picks = element("div", "pick-grid");
-  for (const row of recommendationRows(payload.rows)) picks.append(renderPick(row));
+  for (const row of recommendationRows(payload.rows, payload.presentation?.featured_row_ids)) picks.append(renderPick(row));
   picksSection.append(picks);
 
   const resultsSection = element("section", "content-section results-section");
