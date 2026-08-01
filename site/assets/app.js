@@ -1,23 +1,26 @@
 "use strict";
 
 const app = document.getElementById("app");
+const KEY_PREFIX = "encrypted-dashboard-key:";
+
+function element(name, className, text) {
+  const node = document.createElement(name);
+  if (className) node.className = className;
+  if (text !== undefined && text !== null) node.textContent = String(text);
+  return node;
+}
 
 function locked() {
   document.title = "Private Dashboard";
-  const section = document.createElement("section");
-  section.className = "locked";
-  const mark = document.createElement("div");
-  mark.className = "lock-mark";
+  const section = element("section", "locked");
+  const mark = element("div", "lock-mark", "\u25cf");
   mark.setAttribute("aria-hidden", "true");
-  mark.textContent = "\u25cf";
-  const eyebrow = document.createElement("p");
-  eyebrow.className = "eyebrow";
-  eyebrow.textContent = "PRIVATE DASHBOARD";
-  const heading = document.createElement("h1");
-  heading.textContent = "Locked";
-  const note = document.createElement("p");
-  note.textContent = "This page needs the complete link from its authorized email.";
-  section.append(mark, eyebrow, heading, note);
+  section.append(
+    mark,
+    element("p", "eyebrow", "PRIVATE DASHBOARD"),
+    element("h1", null, "Locked"),
+    element("p", null, "Open the complete link from your authorized email to view this dashboard.")
+  );
   app.replaceChildren(section);
 }
 
@@ -41,9 +44,19 @@ async function sha256Hex(bytes) {
   return [...digest].map(byte => byte.toString(16).padStart(2, "0")).join("");
 }
 
+function sessionKeyName() {
+  return `${KEY_PREFIX}${location.pathname}`;
+}
+
+function keyFromPage() {
+  const fromLink = new URLSearchParams(location.hash.slice(1)).get("k");
+  if (fromLink) return {keyText: fromLink, fromLink: true};
+  return {keyText: sessionStorage.getItem(sessionKeyName()), fromLink: false};
+}
+
 async function unlock() {
-  const keyText = new URLSearchParams(location.hash.slice(1)).get("k");
-  const keyBytes = decodeBase64Url(keyText);
+  const keySource = keyFromPage();
+  const keyBytes = decodeBase64Url(keySource.keyText);
   if (keyBytes.length !== 32) throw new Error("locked");
 
   const response = await fetch("./envelope.json", {cache: "no-store", credentials: "omit"});
@@ -89,87 +102,248 @@ async function unlock() {
     !Array.isArray(payload.rows)
   ) throw new Error("locked");
 
-  history.replaceState(null, "", location.pathname + location.search);
+  if (keySource.fromLink) {
+    sessionStorage.setItem(sessionKeyName(), keySource.keyText);
+    history.replaceState(null, "", location.pathname + location.search);
+  }
   render(payload);
-}
-
-function element(name, className, text) {
-  const node = document.createElement(name);
-  if (className) node.className = className;
-  if (text !== undefined && text !== null) node.textContent = String(text);
-  return node;
 }
 
 function money(value) {
   return typeof value === "number"
-    ? new Intl.NumberFormat("en-US", {style: "currency", currency: "USD"}).format(value)
-    : "\u2014";
+    ? new Intl.NumberFormat("en-US", {style: "currency", currency: "USD", maximumFractionDigits: 2}).format(value)
+    : "Not shown";
+}
+
+function readableDate(value) {
+  const date = new Date(value);
+  if (!value || Number.isNaN(date.getTime())) return value || "Not recorded";
+  return date.toLocaleString("en-US", {
+    year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+    timeZoneName: "short"
+  });
+}
+
+function friendlyText(value) {
+  return String(value || "").replace(
+    /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/g,
+    timestamp => readableDate(timestamp)
+  );
+}
+
+function statusClass(value) {
+  const text = String(value || "").toLowerCase();
+  if (/blocked|stale|unavailable|stop/.test(text)) return "danger";
+  if (/caution|due|watch|check/.test(text)) return "warning";
+  if (/top|best|ready|available|fresh|confirmed|recommend/.test(text)) return "good";
+  return "info";
+}
+
+function directLink(row, label = "Open retailer") {
+  if (!row.direct_url) return null;
+  const parsed = new URL(row.direct_url);
+  if (parsed.protocol !== "https:") return null;
+  const link = element("a", "direct", label);
+  link.href = parsed.href;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.referrerPolicy = "no-referrer";
+  return link;
+}
+
+function badge(text, kind = "info") {
+  return element("span", `badge ${kind}`, text);
+}
+
+function detailValue(row, name) {
+  return Object.prototype.hasOwnProperty.call(row.details || {}, name) ? row.details[name] : null;
+}
+
+function recommendationRows(rows) {
+  const marked = rows.filter(row => /top|best|ready|recommend/i.test(row.status || ""));
+  if (marked.length) return marked.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity)).slice(0, 3);
+  return rows
+    .filter(row => typeof row.price === "number" && !/blocked|stale|unavailable/i.test(row.status || ""))
+    .sort((a, b) => a.price - b.price)
+    .slice(0, 3);
+}
+
+function renderPick(row) {
+  const card = element("article", "pick-card");
+  const retailer = detailValue(row, "Retailer") || row.status;
+  card.append(element("p", "eyebrow", retailer));
+  const title = element("h3", null, row.name);
+  card.append(title, element("p", "pick-price", money(row.price)));
+  const badges = element("div", "badge-row");
+  badges.append(badge(row.status, statusClass(row.status)));
+  const taps = detailValue(row, "Tap count");
+  const complete = detailValue(row, "Complete kit");
+  const outdoor = detailValue(row, "Outdoor rated");
+  if (taps) badges.append(badge(`${taps} ${String(taps) === "1" ? "tap" : "taps"}`));
+  if (complete) badges.append(badge(complete === "Yes" ? "Complete kit" : "Conversion/base", complete === "Yes" ? "good" : "warning"));
+  if (outdoor) badges.append(badge(outdoor === "Yes" ? "Outdoor-rated" : "Indoor"));
+  card.append(badges);
+  const description = detailValue(row, "Description");
+  if (description) card.append(element("p", "card-copy", description));
+  const link = directLink(row, "View deal");
+  if (link) card.append(link);
+  return card;
+}
+
+function historyList(row) {
+  const list = element("ul", "history-list");
+  const entries = (row.history || []).slice(-6).reverse();
+  for (const entry of entries) {
+    const line = [readableDate(entry.at), entry.value, entry.note].filter(Boolean).join(" · ");
+    list.append(element("li", null, line));
+  }
+  if (!entries.length) list.append(element("li", null, "No price history recorded."));
+  return list;
+}
+
+function evidenceDetails(row) {
+  const disclosure = element("details", "evidence-details");
+  disclosure.append(element("summary", null, "Evidence, specifications and history"));
+  const content = element("div", "evidence-content");
+  const evidence = element("div", "evidence-block");
+  evidence.append(element("h4", null, "Validation"));
+  const evidenceList = element("dl", "detail-list");
+  for (const [label, value] of [
+    ["Evidence", row.freshness], ["Confidence", row.confidence], ["Validation", row.validation]
+  ]) {
+    evidenceList.append(element("dt", null, label), element("dd", null, value));
+  }
+  evidence.append(evidenceList);
+
+  const specs = element("div", "evidence-block");
+  specs.append(element("h4", null, "Specifications"));
+  const specList = element("dl", "detail-list");
+  for (const [label, value] of Object.entries(row.details || {})) {
+    specList.append(element("dt", null, label), element("dd", null, value));
+  }
+  specs.append(specList);
+
+  const history = element("div", "evidence-block");
+  history.append(element("h4", null, "Recent history"), historyList(row));
+  content.append(evidence, specs, history);
+  disclosure.append(content);
+  return disclosure;
+}
+
+function renderResult(row) {
+  const card = element("article", "result-card");
+  const top = element("div", "result-topline");
+  top.append(
+    element("p", "eyebrow", detailValue(row, "Retailer") || row.availability),
+    badge(row.status, statusClass(row.status))
+  );
+  const heading = element("h3", null, row.name);
+  const model = row.model && row.model !== row.name ? element("p", "model", row.model) : null;
+  const priceLine = element("div", "price-line");
+  priceLine.append(element("strong", "result-price", money(row.price)));
+  if (typeof row.change === "number" && row.change !== 0) {
+    const direction = row.change < 0 ? "drop" : "rise";
+    priceLine.append(element("span", `change ${direction}`, `${row.change < 0 ? "Down" : "Up"} ${money(Math.abs(row.change))}`));
+  }
+  const badgeRow = element("div", "badge-row");
+  badgeRow.append(
+    badge(row.availability, statusClass(row.availability)),
+    badge(row.confidence, statusClass(row.confidence))
+  );
+  const garage = detailValue(row, "Garage suitability");
+  if (garage) badgeRow.append(badge(garage, statusClass(garage)));
+  card.append(top, heading);
+  if (model) card.append(model);
+  card.append(priceLine, badgeRow);
+  const description = detailValue(row, "Description");
+  if (description) card.append(element("p", "card-copy", description));
+  const actions = element("div", "card-actions");
+  const link = directLink(row);
+  if (link) actions.append(link);
+  card.append(actions, evidenceDetails(row));
+  return card;
 }
 
 function render(payload) {
   document.title = payload.title;
   const root = element("section", "dashboard");
-  const hero = element("header", "hero");
-  const copy = element("div");
-  copy.append(
-    element("p", "eyebrow", payload.overall_status),
-    element("h1", null, payload.summary.decision),
-    element("p", "recommendation", payload.summary.recommendation)
-  );
-  const metadata = element("div", "metadata");
-  for (const [label, value] of [
-    ["Dashboard", payload.title],
-    ["Generated", payload.generated_at],
-    ["Source freshness", payload.source_freshness],
-    ["Snapshot", payload.snapshot_id]
-  ]) {
-    const card = element("div");
-    card.append(element("span", null, label), element("strong", null, value));
-    metadata.append(card);
-  }
-  hero.append(copy, metadata);
 
-  const kpis = element("div", "kpis");
-  for (const [label, value] of [
-    ["Results", payload.rows.length],
-    ["Verified changes", payload.summary.verified_changes],
-    ["Blocked", payload.summary.blocked],
-    ["Stale", payload.summary.stale],
-    ["Overdue", payload.summary.overdue]
-  ]) {
-    const card = element("div", "kpi");
-    card.append(element("span", null, label), element("strong", null, value));
-    kpis.append(card);
+  const hero = element("header", "hero");
+  const heroCopy = element("div", "hero-copy");
+  heroCopy.append(
+    badge(payload.overall_status, statusClass(payload.overall_status)),
+    element("p", "eyebrow", "PRIVATE DECISION DASHBOARD"),
+    element("h1", null, payload.title),
+    element("p", "lead", payload.summary.decision)
+  );
+  const recommendation = element("details", "recommendation-panel");
+  recommendation.open = !matchMedia("(max-width: 900px)").matches;
+  recommendation.append(element("summary", null, "Current recommendation"));
+  const recommendationParts = payload.summary.recommendation.split(";").map(value => value.trim()).filter(Boolean);
+  if (recommendationParts.length > 1) {
+    const list = element("ul", "recommendation-list");
+    for (const part of recommendationParts) list.append(element("li", null, part));
+    recommendation.append(list);
+  } else {
+    recommendation.append(element("p", "recommendation", payload.summary.recommendation));
   }
+  hero.append(heroCopy, recommendation);
+
+  const prices = payload.rows.map(row => row.price).filter(value => typeof value === "number");
+  const metrics = element("section", "metrics");
+  const metricValues = [
+    ["Lowest current price", prices.length ? money(Math.min(...prices)) : "Not shown"],
+    ["Current price range", prices.length ? `${money(Math.min(...prices))} – ${money(Math.max(...prices))}` : "Not shown"],
+    ["Offers compared", payload.rows.length],
+    ["Snapshot generated", readableDate(payload.generated_at)]
+  ];
+  for (const [label, value] of metricValues) {
+    const metric = element("div", "metric");
+    metric.append(element("span", null, label), element("strong", null, value));
+    metrics.append(metric);
+  }
+
+  const freshness = element("section", `freshness ${statusClass(payload.overall_status)}`);
+  freshness.append(
+    badge(payload.overall_status, statusClass(payload.overall_status)),
+    element("div", null, null)
+  );
+  freshness.lastChild.append(
+    element("p", "eyebrow", "SOURCE FRESHNESS"),
+    element("strong", null, friendlyText(payload.source_freshness))
+  );
+
+  const picksSection = element("section", "content-section");
+  picksSection.append(
+    element("p", "eyebrow", "BEST CURRENT OPTIONS"),
+    element("h2", null, "Start with these")
+  );
+  const picks = element("div", "pick-grid");
+  for (const row of recommendationRows(payload.rows)) picks.append(renderPick(row));
+  picksSection.append(picks);
+
+  const resultsSection = element("section", "content-section results-section");
+  const resultsHeading = element("div", "section-heading");
+  const headingCopy = element("div");
+  headingCopy.append(element("p", "eyebrow", "ALL VERIFIED RESULTS"), element("h2", null, "Compare every offer"));
+  const matchCount = element("p", "match-count", `${payload.rows.length} shown`);
+  resultsHeading.append(headingCopy, matchCount);
 
   const controls = element("div", "controls");
   const search = element("input");
   search.type = "search";
-  search.placeholder = "Search every result";
+  search.placeholder = "Search models, retailers or specifications";
   search.setAttribute("aria-label", "Search results");
   const status = element("select");
   status.setAttribute("aria-label", "Filter by status");
   status.append(new Option("All statuses", ""));
-  for (const value of [...new Set(payload.rows.map(row => row.status))].sort()) {
-    status.append(new Option(value, value));
-  }
-  const sort = element("button", null, "Sort lowest price");
-  sort.type = "button";
+  for (const value of [...new Set(payload.rows.map(row => row.status))].sort()) status.append(new Option(value, value));
+  const sort = element("select");
+  sort.setAttribute("aria-label", "Sort results");
+  sort.append(new Option("Recommended order", "source"), new Option("Lowest price", "price"), new Option("Largest price drop", "drop"));
   controls.append(search, status, sort);
 
-  const tableWrap = element("div", "table-wrap");
-  const table = element("table");
-  const head = element("thead");
-  const headRow = element("tr");
-  for (const label of ["Item", "Price", "Change", "Availability", "Evidence", "Confidence", "Validation", "History", "Status", "Direct link"]) {
-    headRow.append(element("th", null, label));
-  }
-  head.append(headRow);
-  const body = element("tbody");
-  table.append(head, body);
-  tableWrap.append(table);
-
-  let priceAscending = false;
+  const results = element("div", "result-grid");
   function draw() {
     const needle = search.value.trim().toLowerCase();
     const wantedStatus = status.value;
@@ -178,84 +352,35 @@ function render(payload) {
       const haystack = [row.name, row.model, row.availability, row.freshness, row.confidence, row.validation, row.status, ...history, ...Object.values(row.details || {})].join(" ").toLowerCase();
       return (!needle || haystack.includes(needle)) && (!wantedStatus || row.status === wantedStatus);
     });
-    if (priceAscending) {
-      rows = [...rows].sort((a, b) => (a.price ?? Number.POSITIVE_INFINITY) - (b.price ?? Number.POSITIVE_INFINITY));
-    }
-    body.replaceChildren();
-    for (const row of rows) body.append(renderRow(row));
-    if (!rows.length) {
-      const emptyRow = element("tr");
-      const cell = element("td", "empty", "No results match the current filters.");
-      cell.colSpan = 10;
-      emptyRow.append(cell);
-      body.append(emptyRow);
-    }
+    if (sort.value === "price") rows = [...rows].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
+    if (sort.value === "drop") rows = [...rows].sort((a, b) => (a.change ?? Infinity) - (b.change ?? Infinity));
+    results.replaceChildren();
+    for (const row of rows) results.append(renderResult(row));
+    if (!rows.length) results.append(element("p", "empty", "No offers match those filters."));
+    matchCount.textContent = `${rows.length} shown`;
   }
   search.addEventListener("input", draw);
   status.addEventListener("change", draw);
-  sort.addEventListener("click", () => {
-    priceAscending = !priceAscending;
-    sort.textContent = priceAscending ? "Use source order" : "Sort lowest price";
-    draw();
-  });
+  sort.addEventListener("change", draw);
+  resultsSection.append(resultsHeading, controls, results);
 
-  root.append(hero, kpis, controls, tableWrap);
+  const technical = element("details", "technical");
+  technical.append(element("summary", null, "About this private snapshot"));
+  const technicalList = element("dl", "detail-list technical-list");
+  for (const [label, value] of [
+    ["Dashboard", payload.title], ["Generated", readableDate(payload.generated_at)],
+    ["Snapshot ID", payload.snapshot_id], ["Verified changes", payload.summary.verified_changes],
+    ["Blocked", payload.summary.blocked], ["Stale", payload.summary.stale], ["Overdue", payload.summary.overdue]
+  ]) technicalList.append(element("dt", null, label), element("dd", null, value));
+  technical.append(technicalList);
+
+  const footer = element("footer", "footer", "Confirm final price, stock, seller identity, delivery timing and product fit before buying.");
+  root.append(hero, metrics, freshness, picksSection, resultsSection, technical, footer);
   app.replaceChildren(root);
   draw();
 }
 
-function renderRow(row) {
-  const tr = element("tr");
-  const item = element("td");
-  item.dataset.label = "Item";
-  item.append(element("strong", null, row.name));
-  if (row.model) item.append(element("div", "details", row.model));
-  const details = Object.entries(row.details || {}).map(([key, value]) => `${key}: ${value}`).join(" \u00b7 ");
-  if (details) item.append(element("div", "details", details));
-  tr.append(item);
-  const price = element("td", "price", money(row.price));
-  price.dataset.label = "Price";
-  tr.append(price);
-  const change = element("td", row.change < 0 ? "negative" : row.change > 0 ? "positive" : "", row.change == null ? "\u2014" : money(row.change));
-  change.dataset.label = "Change";
-  tr.append(change);
-  const availability = element("td", null, row.availability);
-  availability.dataset.label = "Availability";
-  tr.append(availability);
-  const freshness = element("td", null, row.freshness);
-  freshness.dataset.label = "Evidence";
-  tr.append(freshness);
-  const confidence = element("td", null, row.confidence);
-  confidence.dataset.label = "Confidence";
-  tr.append(confidence);
-  const validation = element("td", null, row.validation);
-  validation.dataset.label = "Validation";
-  tr.append(validation);
-  const historyText = (row.history || []).map(entry => {
-    return [entry.at, entry.value, entry.note].filter(Boolean).join(" · ");
-  }).filter(Boolean).join(" | ");
-  const history = element("td", "history", historyText || "No history");
-  history.dataset.label = "History";
-  tr.append(history);
-  const status = element("td");
-  status.dataset.label = "Status";
-  status.append(element("span", "pill", row.status));
-  tr.append(status);
-  const direct = element("td");
-  direct.dataset.label = "Direct link";
-  if (row.direct_url) {
-    const parsed = new URL(row.direct_url);
-    if (parsed.protocol === "https:") {
-      const link = element("a", "direct", "Open retailer");
-      link.href = parsed.href;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.referrerPolicy = "no-referrer";
-      direct.append(link);
-    }
-  }
-  tr.append(direct);
-  return tr;
-}
-
-unlock().catch(locked);
+unlock().catch(() => {
+  sessionStorage.removeItem(sessionKeyName());
+  locked();
+});
