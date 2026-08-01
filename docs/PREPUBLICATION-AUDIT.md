@@ -80,4 +80,13 @@ a mode-0600 receipt outside every Git repository.
 
 The pilot flag defaults off and is absent from scheduled automation. No
 schedule, model, recipient, existing email, or existing public Kegerator
-dashboard changed. No encrypted-link email has been sent.
+dashboard changed.
+
+## Luke-only validation email evidence
+
+Luke explicitly confirmed the send on 2026-08-01. One plain-text validation
+email was sent to Luke only with no CC or BCC. Gmail message
+`19fbd41b714e8b02` appears in Sent and resolves to the exact authorized
+recipient. The complete bearer link remains only in that email and the private
+mode-0600 receipt; it is not recorded in this repository. This test send did
+not activate or modify scheduled delivery.
