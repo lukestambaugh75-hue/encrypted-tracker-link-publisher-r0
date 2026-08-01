@@ -1,0 +1,4 @@
+.DS_Store
+.publisher.lock/
+.publisher.lock.stale-*/
+local/
