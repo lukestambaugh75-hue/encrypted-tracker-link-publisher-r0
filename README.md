@@ -8,8 +8,8 @@ opaque identifiers, and authenticated ciphertext.
 
 - Public GitHub repository containing only generic viewer assets and ciphertext
 - GitHub Pages enabled through the pinned deployment workflow
-- Synthetic ciphertext only
-- No production tracker adapter or email is active
+- Synthetic fixture plus one encrypted Kegerator pilot snapshot
+- Kegerator pilot adapter is default-off; no scheduled task or encrypted-link email is active
 
 The source of the encryption, secret handling, locking, and viewer generator
 remains in Luke's private Tools repository and is not copied into this public
@@ -17,10 +17,9 @@ artifact repository.
 
 ## Production cutover gate
 
-The synthetic public host is validated. Do not publish production tracker
-ciphertext or send a magic link until the Kegerator pilot adapter, audience
-guard, exact deployed-envelope check, and Luke-only email confirmation have
-passed their separate gates.
+The synthetic public host and the default-off Kegerator ciphertext pilot are
+validated. Do not activate a scheduled encrypted-link lane or send a magic link
+until the separate recipient and email confirmation gates pass.
 
 1. Encryption and negative tests
 2. Public-tree plaintext/key scan

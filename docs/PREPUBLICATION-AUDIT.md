@@ -1,6 +1,6 @@
 # Pre-publication audit
 
-Status: PUBLIC SYNTHETIC STAGING; PRODUCTION CUTOVER NOT AUTHORIZED
+Status: PUBLIC KGERATOR CIPHERTEXT PILOT; EMAIL AND SCHEDULE CUTOVER NOT AUTHORIZED
 
 This record begins before the repository has a remote or Pages configuration.
 Complete it with live evidence immediately before requesting Luke's publication
@@ -58,5 +58,26 @@ screen. Desktop and mobile browser checks decrypted the synthetic fixture,
 removed the fragment from the visible address, made requests only to the Pages
 origin, and observed no fragment in any request.
 
-Only synthetic ciphertext is deployed. No production tracker adapter, schedule,
-recipient, email, or existing public dashboard changed during this release.
+## Kegerator ciphertext pilot evidence
+
+Luke authorized the default-off Kegerator pilot on 2026-08-01. The private
+tracker adapter built all 24 current offers in memory, including direct retailer
+links, price history, stock, evidence timestamps, confidence, validation, and
+model details. Its focused tests passed, followed by all 227 tracker tests and
+the existing audience boundary.
+
+Public commit `89fdd8de9b456754a92bbc2b6ee962cff51a4918` contains the
+generic viewer and authenticated ciphertext only. Deployment run `30699139877`
+completed successfully. The deployed envelope returned HTTP 200, matched the
+local Git bytes exactly, decrypted to the current private snapshot with 24 rows
+and 24 direct links, and had ciphertext SHA-256
+`9032bfd7243855d810cffe1a1582cefa2e791d74b1248df860e41ab7dd63cc2c`.
+
+Desktop and mobile browser checks confirmed the dark dashboard, 24 rows, 24
+clickable retailer links, fragment removal, no fragment in requests, and a
+generic locked screen without the complete link. The complete link remains in
+a mode-0600 receipt outside every Git repository.
+
+The pilot flag defaults off and is absent from scheduled automation. No
+schedule, model, recipient, existing email, or existing public Kegerator
+dashboard changed. No encrypted-link email has been sent.
