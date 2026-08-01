@@ -8,7 +8,7 @@ confirmation.
 
 ## Required checks
 
-- [x] Tools encryption tests pass: 24 tests
+- [x] Tools encryption tests pass: 22 current tests after removing the obsolete persistent-key module
 - [x] Existing dashboard-mailer regression tests pass: 35 tests
 - [x] Synthetic envelope decrypts with the private local link
 - [x] Missing, wrong, truncated, and altered keys fail closed
