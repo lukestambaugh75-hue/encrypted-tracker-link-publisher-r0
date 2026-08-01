@@ -1,6 +1,6 @@
 # Pre-publication audit
 
-Status: NOT READY FOR PUBLICATION
+Status: CLEAN PRIVATE STAGING; NOT AUTHORIZED FOR PUBLICATION
 
 This record begins before the repository has a remote or Pages configuration.
 Complete it with live evidence immediately before requesting Luke's publication
@@ -8,17 +8,29 @@ confirmation.
 
 ## Required checks
 
-- [ ] Tools encryption tests pass
-- [ ] Existing dashboard-mailer regression tests pass
-- [ ] Synthetic envelope decrypts with the private local link
-- [ ] Missing, wrong, truncated, and altered keys fail closed
-- [ ] Public tree contains no plaintext synthetic sentinel
-- [ ] Public tree contains no email address, local path, secret, or complete link
-- [ ] Viewer loads no third-party resource
-- [ ] Browser request contains no URL fragment
-- [ ] Desktop render inspected
-- [ ] Mobile portrait render inspected
-- [ ] Git diff reviewed
-- [ ] Complete Git history scanned
-- [ ] Branches, tags, releases, and Actions state checked
-- [ ] Repository remains local/private until explicit confirmation
+- [x] Tools encryption tests pass: 24 tests
+- [x] Existing dashboard-mailer regression tests pass: 35 tests
+- [x] Synthetic envelope decrypts with the private local link
+- [x] Missing, wrong, truncated, and altered keys fail closed
+- [x] Public tree contains no plaintext synthetic sentinel
+- [x] Public tree contains no email address, local path, secret, or complete link
+- [x] Viewer loads no third-party resource
+- [x] Browser request contains no URL fragment
+- [x] Desktop render inspected
+- [x] Mobile portrait render inspected
+- [x] Git diff reviewed
+- [x] Complete new Git object database scanned after the history rebuild
+- [x] Local branch and tag state checked: one `main` branch and no tags
+- [ ] Private GitHub remote, releases, Actions, and Pages state checked
+- [x] Repository remains private until a separate explicit publication confirmation
+
+## History rebuild evidence
+
+The original unpublished Git metadata was moved to private recoverable
+quarantine after its object audit found a forbidden absolute-path marker. The
+working tree was scrubbed before a new repository was initialized. The rebuilt
+history began with commit `0814ce4` and its complete blob database passed the
+forbidden-marker scan with no dangling objects.
+
+The quarantined metadata is not part of this repository and must never be
+restored, copied, or pushed into the GitHub remote.
