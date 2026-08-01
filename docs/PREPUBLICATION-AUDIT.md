@@ -21,7 +21,7 @@ confirmation.
 - [x] Git diff reviewed
 - [x] Complete new Git object database scanned after the history rebuild
 - [x] Local branch and tag state checked: one `main` branch and no tags
-- [ ] Private GitHub remote, releases, Actions, and Pages state checked
+- [x] Private GitHub remote checked: `main` only, no tags or releases, no Actions workflows, Pages disabled
 - [x] Repository remains private until a separate explicit publication confirmation
 
 ## History rebuild evidence
@@ -34,3 +34,10 @@ forbidden-marker scan with no dangling objects.
 
 The quarantined metadata is not part of this repository and must never be
 restored, copied, or pushed into the GitHub remote.
+
+## Private remote evidence
+
+GitHub reported the repository as private with `main` as its default and only
+branch. It reported no tags, releases, Actions workflows, or Pages site. The
+remote `main` commit matched the local audited commit before this record was
+updated. Public visibility and Pages remain a separate approval gate.

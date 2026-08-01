@@ -6,8 +6,7 @@ only the generic viewer, opaque identifiers, and authenticated ciphertext.
 
 ## Current state
 
-- Local Git repository only
-- No GitHub remote
+- Private GitHub repository
 - No GitHub Pages configuration
 - Synthetic ciphertext only
 - No production tracker adapter or email is active
@@ -18,9 +17,9 @@ artifact repository.
 
 ## Publication gate
 
-Do not make this repository public, create a remote, enable Pages, or send a
-magic link until all of the following have passed and Luke confirms the outward
-action immediately before it occurs:
+Do not make this repository public, enable Pages, or send a magic link until all
+of the following have passed and Luke confirms the outward action immediately
+before it occurs:
 
 1. Encryption and negative tests
 2. Public-tree plaintext/key scan
