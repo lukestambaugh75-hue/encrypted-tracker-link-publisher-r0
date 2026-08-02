@@ -274,12 +274,38 @@ function renderCompactRow(row) {
   name.append(element("strong", null, row.name));
   if (row.model && row.model !== row.name) name.append(element("span", "table-subtitle", row.model));
 
-  const scope = element("td", "table-scope", row.availability);
+  const condition = detailValue(row, "Listing type") || "--";
+  const packageName = detailValue(row, "Package") || row.model || "--";
+  const mileage = detailValue(row, "Mileage") || "--";
+  const exterior = detailValue(row, "Exterior") || "--";
+  const dealer = detailValue(row, "Dealer") || "--";
+  const market = detailValue(row, "Market") || "--";
+  const scope = element("td", "table-scope", condition);
+  const packageCell = element("td", "table-package", packageName);
   const estimate = element("td", "table-money", money(row.price));
+  const miles = element("td", "table-miles", mileage);
+  const color = element("td", "table-color");
+  const colorDot = element("span", "table-color-dot");
+  const normalizedColor = exterior.toLowerCase();
+  const swatches = [
+    ["black", "#1f2933"], ["blue", "#4b8fb8"], ["gray", "#7b8584"],
+    ["green", "#6b8f71"], ["red", "#b95c54"], ["white", "#e5e7eb"],
+    ["silver", "#b7c0c7"], ["orange", "#c77b3d"], ["yellow", "#c5aa4a"]
+  ];
+  const swatch = swatches.find(([name]) => normalizedColor.includes(name));
+  colorDot.style.backgroundColor = swatch ? swatch[1] : "#6f7772";
+  color.append(colorDot, exterior);
+  const dealerCell = element("td", "table-dealer");
+  dealerCell.append(element("strong", null, dealer), element("span", "table-subtitle", market));
   const signal = element("td", "table-signal");
   signal.append(badge(row.status, statusClass(row.status)));
 
   const detailCell = element("td", "table-detail-cell");
+  const listingLink = directLink(row, "View listing");
+  if (listingLink) {
+    listingLink.className = "table-link";
+    detailCell.append(listingLink);
+  }
   const details = element("details", "table-details");
   details.append(element("summary", null, "Details"));
   const list = element("dl", "detail-list table-detail-list");
@@ -291,7 +317,7 @@ function renderCompactRow(row) {
   ]) list.append(element("dt", null, label), element("dd", null, value));
   details.append(list);
   detailCell.append(details);
-  line.append(name, scope, estimate, signal, detailCell);
+  line.append(name, scope, packageCell, estimate, miles, color, dealerCell, signal, detailCell);
   return line;
 }
 
@@ -332,10 +358,30 @@ function render(payload) {
   const metricValues = Array.isArray(payload.presentation?.metrics)
     ? payload.presentation.metrics.map(metric => [metric.label, metric.value])
     : defaultMetricValues;
-  for (const [label, value] of metricValues) {
-    const metric = element("div", "metric");
-    metric.append(element("span", null, label), element("strong", null, value));
-    metrics.append(metric);
+  if (compactTable) {
+    const tableWrap = element("div", "summary-table-wrap");
+    const table = element("table", "summary-table");
+    const head = element("thead");
+    const headRow = element("tr");
+    for (const [label] of metricValues) {
+      const cell = element("th", null, label);
+      cell.scope = "col";
+      headRow.append(cell);
+    }
+    head.append(headRow);
+    const body = element("tbody");
+    const valueRow = element("tr");
+    for (const [, value] of metricValues) valueRow.append(element("td", null, value));
+    body.append(valueRow);
+    table.append(head, body);
+    tableWrap.append(table);
+    metrics.append(tableWrap);
+  } else {
+    for (const [label, value] of metricValues) {
+      const metric = element("div", "metric");
+      metric.append(element("span", null, label), element("strong", null, value));
+      metrics.append(metric);
+    }
   }
 
   const freshness = element("section", `freshness ${statusClass(payload.overall_status)}`);
@@ -363,8 +409,8 @@ function render(payload) {
   const resultsHeading = element("div", "section-heading");
   const headingCopy = element("div");
   headingCopy.append(
-    element("p", "eyebrow", compactTable ? "CURRENT COST LEDGER" : "ALL VERIFIED RESULTS"),
-    element("h2", null, compactTable ? "Compact cost table" : "Compare every offer")
+    element("p", "eyebrow", compactTable ? (payload.presentation?.result_eyebrow || "CURRENT COST LEDGER") : "ALL VERIFIED RESULTS"),
+    element("h2", null, compactTable ? (payload.presentation?.result_title || "Compact cost table") : "Compare every offer")
   );
   const matchCount = element("p", "match-count", `${payload.rows.length} shown`);
   resultsHeading.append(headingCopy, matchCount);
@@ -393,7 +439,7 @@ function render(payload) {
     const table = element("table", "compact-table");
     const head = element("thead");
     const headRow = element("tr");
-    for (const title of ["Cost line", "Scope", "Estimate", "Signal", "Details"]) {
+    for (const title of ["Truck", "Condition", "Package", "Visible price", "Miles", "Exterior color", "Dealer / location", "Signal", "Action / details"]) {
       const cell = element("th", null, title);
       cell.scope = "col";
       headRow.append(cell);
@@ -418,7 +464,7 @@ function render(payload) {
       for (const row of rows) tableBody.append(renderCompactRow(row));
       if (!rows.length) {
         const empty = element("td", "table-empty", "No cost lines match those filters.");
-        empty.colSpan = 5;
+        empty.colSpan = 9;
         const emptyRow = element("tr");
         emptyRow.append(empty);
         tableBody.append(emptyRow);

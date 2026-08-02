@@ -60,6 +60,10 @@ a { text-underline-offset: 3px; }
 .metric { min-height: 126px; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
 .metric span { color: var(--blue); font-size: .74rem; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
 .metric strong { display: block; margin-top: 10px; font-size: 1.55rem; line-height: 1.1; }
+.summary-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.summary-table { width: 100%; border-collapse: collapse; text-align: left; }
+.summary-table th { padding: 9px 12px; color: var(--blue); background: var(--panel-2); border-bottom: 1px solid var(--line); font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.summary-table td { padding: 11px 12px; color: var(--text); font-size: 1.05rem; font-weight: 850; white-space: nowrap; }
 
 .freshness { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; margin: 0 0 28px; padding: 18px; border: 1px solid var(--line); border-left: 4px solid var(--blue); border-radius: 10px; background: var(--panel); }
 .freshness.good { border-left-color: var(--green); }
@@ -108,7 +112,7 @@ a { text-underline-offset: 3px; }
 .card-actions { display: flex; margin: 14px 0; }
 
 .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
-.compact-table { width: 100%; min-width: 760px; border-collapse: collapse; text-align: left; }
+.compact-table { width: 100%; min-width: 1120px; border-collapse: collapse; text-align: left; }
 .compact-table th { padding: 10px 12px; color: var(--blue); background: var(--panel-2); border-bottom: 1px solid var(--line); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; }
 .compact-table td { padding: 10px 12px; color: var(--body); border-bottom: 1px solid var(--line); font-size: .86rem; vertical-align: top; }
 .compact-table tbody tr:last-child td { border-bottom: 0; }
@@ -118,7 +122,14 @@ a { text-underline-offset: 3px; }
 .table-name strong, .table-subtitle { display: block; }
 .table-subtitle, .table-scope { color: var(--muted) !important; }
 .table-scope { min-width: 145px; }
+.table-package { min-width: 135px; }
 .table-money { min-width: 115px; color: var(--text) !important; font-weight: 850; white-space: nowrap; }
+.table-miles { min-width: 70px; white-space: nowrap; }
+.table-color { min-width: 135px; white-space: nowrap; }
+.table-color-dot { display: inline-block; width: 12px; height: 12px; margin-right: 7px; border: 1px solid rgba(255, 255, 255, .38); border-radius: 50%; vertical-align: -1px; }
+.table-dealer { min-width: 190px; }
+.table-link { display: inline-block; margin-bottom: 7px; color: var(--blue); font-weight: 850; text-decoration: none; }
+.table-link:hover { text-decoration: underline; }
 .table-signal { min-width: 110px; }
 .table-detail-cell { min-width: 190px; }
 .table-details summary { font-size: .82rem; }
@@ -149,7 +160,7 @@ summary { color: var(--blue); cursor: pointer; font-weight: 800; }
   .evidence-content { grid-template-columns: 1fr; }
   .section-heading { align-items: start; }
   .table-wrap { -webkit-overflow-scrolling: touch; }
-  .compact-table { min-width: 680px; }
+  .compact-table { min-width: 980px; }
 }
 
 @media (max-width: 520px) {
