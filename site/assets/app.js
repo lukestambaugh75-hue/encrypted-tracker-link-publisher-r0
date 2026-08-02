@@ -274,8 +274,30 @@ function renderCompactRow(row) {
   name.append(element("strong", null, row.name));
   if (row.model && row.model !== row.name) name.append(element("span", "table-subtitle", row.model));
 
+  const condition = detailValue(row, "Listing type") || row.availability || "--";
+  const packageName = detailValue(row, "Package") || "--";
+  const availability = row.availability && row.availability !== condition ? row.availability : null;
+  const buying = element("td", "table-buying");
+  buying.append(element("strong", null, condition));
+  if (packageName !== "--") buying.append(element("span", "table-subtitle", packageName));
+  if (availability) buying.append(element("span", "table-subtitle", availability));
+
   const exterior = detailValue(row, "Exterior") || "--";
   const estimate = element("td", "table-money", money(row.price));
+  const mileage = detailValue(row, "Mileage") || "--";
+  const daysListed = detailValue(row, "Days listed");
+  const usage = element("td", "table-usage");
+  usage.append(element("strong", null, mileage));
+  if (daysListed) usage.append(element("span", "table-subtitle", `${daysListed} days listed`));
+
+  const dealer = detailValue(row, "Dealer") || "--";
+  const market = detailValue(row, "Market") || "--";
+  const distance = detailValue(row, "Distance");
+  const dealerCell = element("td", "table-dealer");
+  dealerCell.append(element("strong", null, dealer));
+  const location = [market, distance].filter(Boolean).join(" · ");
+  if (location) dealerCell.append(element("span", "table-subtitle", location));
+
   const color = element("td", "table-color");
   const colorDot = element("span", "table-color-dot");
   const swatches = [
@@ -298,19 +320,24 @@ function renderCompactRow(row) {
 
   const detailCell = element("td", "table-detail-cell");
   const details = element("details", "table-details");
-  details.append(element("summary", null, "Details"));
+  details.append(element("summary", null, "Evidence"));
   const list = element("dl", "detail-list table-detail-list");
-  for (const [label, value] of [
+  const evidence = [
+    ["Status", row.status],
     ["Freshness", row.freshness],
     ["Confidence", row.confidence],
     ["Validation", row.validation],
     ...Object.entries(row.details || {})
-  ]) list.append(element("dt", null, label), element("dd", null, value));
+  ];
+  const seen = new Set();
+  for (const [label, value] of evidence) {
+    if (seen.has(label) || value === undefined || value === null || value === "") continue;
+    seen.add(label);
+    list.append(element("dt", null, label), element("dd", null, value));
+  }
   details.append(list);
   detailCell.append(details);
-  const signal = element("td", "table-signal");
-  signal.append(badge(row.status, statusClass(row.status)));
-  line.append(name, estimate, color, urlCell, detailCell, signal);
+  line.append(name, buying, estimate, usage, dealerCell, color, urlCell, detailCell);
   return line;
 }
 
@@ -411,7 +438,7 @@ function render(payload) {
   const controls = element("div", "controls");
   const search = element("input");
   search.type = "search";
-  search.placeholder = "Search models, retailers or specifications";
+  search.placeholder = "Search vehicles, sellers or evidence";
   search.setAttribute("aria-label", "Search results");
   const status = element("select");
   status.setAttribute("aria-label", "Filter by status");
@@ -429,10 +456,14 @@ function render(payload) {
   const results = compactTable ? element("div", "table-wrap") : element("div", "result-grid");
   const tableBody = compactTable ? element("tbody") : null;
   if (compactTable) {
+    results.setAttribute("role", "region");
+    results.setAttribute("aria-label", "Scrollable vehicle comparison");
+    results.setAttribute("tabindex", "0");
     const table = element("table", "compact-table");
+    table.append(element("caption", "table-caption", "One vehicle per row; scroll horizontally on small screens."));
     const head = element("thead");
     const headRow = element("tr");
-    for (const title of ["Cost line", "Estimate", "Color", "Direct URL", "Details", "Signal"]) {
+    for (const title of ["Vehicle", "Buying context", "Price", "Usage", "Seller / location", "Color", "Vehicle link", "Evidence"]) {
       const cell = element("th", null, title);
       cell.scope = "col";
       headRow.append(cell);
@@ -457,7 +488,7 @@ function render(payload) {
       for (const row of rows) tableBody.append(renderCompactRow(row));
       if (!rows.length) {
         const empty = element("td", "table-empty", "No vehicles match those filters.");
-        empty.colSpan = 6;
+        empty.colSpan = 8;
         const emptyRow = element("tr");
         emptyRow.append(empty);
         tableBody.append(emptyRow);
