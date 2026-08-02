@@ -274,18 +274,8 @@ function renderCompactRow(row) {
   name.append(element("strong", null, row.name));
   if (row.model && row.model !== row.name) name.append(element("span", "table-subtitle", row.model));
 
-  const condition = detailValue(row, "Listing type") || row.availability || "--";
-  const packageName = detailValue(row, "Package") || row.model || "--";
-  const mileage = detailValue(row, "Mileage") || "--";
   const exterior = detailValue(row, "Exterior") || "--";
-  const dealer = detailValue(row, "Dealer") || "--";
-  const market = detailValue(row, "Market") || "--";
-  const scope = element("td", "table-scope", condition);
-  const packageCell = element("td", "table-package", packageName);
   const estimate = element("td", "table-money", money(row.price));
-  const miles = element("td", "table-miles", mileage);
-  const dealerCell = element("td", "table-dealer");
-  dealerCell.append(element("strong", null, dealer), element("span", "table-subtitle", market));
   const color = element("td", "table-color");
   const colorDot = element("span", "table-color-dot");
   const swatches = [
@@ -318,7 +308,9 @@ function renderCompactRow(row) {
   ]) list.append(element("dt", null, label), element("dd", null, value));
   details.append(list);
   detailCell.append(details);
-  line.append(name, scope, packageCell, estimate, miles, dealerCell, color, urlCell, detailCell);
+  const signal = element("td", "table-signal");
+  signal.append(badge(row.status, statusClass(row.status)));
+  line.append(name, estimate, color, urlCell, detailCell, signal);
   return line;
 }
 
@@ -440,7 +432,7 @@ function render(payload) {
     const table = element("table", "compact-table");
     const head = element("thead");
     const headRow = element("tr");
-    for (const title of ["Truck", "Condition", "Package", "Visible price", "Miles", "Dealer / location", "Color", "Direct URL", "Details"]) {
+    for (const title of ["Cost line", "Estimate", "Color", "Direct URL", "Details", "Signal"]) {
       const cell = element("th", null, title);
       cell.scope = "col";
       headRow.append(cell);
@@ -465,7 +457,7 @@ function render(payload) {
       for (const row of rows) tableBody.append(renderCompactRow(row));
       if (!rows.length) {
         const empty = element("td", "table-empty", "No vehicles match those filters.");
-        empty.colSpan = 9;
+        empty.colSpan = 6;
         const emptyRow = element("tr");
         emptyRow.append(empty);
         tableBody.append(emptyRow);

@@ -112,7 +112,7 @@ a { text-underline-offset: 3px; }
 .card-actions { display: flex; margin: 14px 0; }
 
 .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
-.compact-table { width: 100%; min-width: 1120px; border-collapse: collapse; text-align: left; }
+.compact-table { width: 100%; min-width: 900px; border-collapse: collapse; text-align: left; }
 .compact-table th { padding: 10px 12px; color: var(--blue); background: var(--panel-2); border-bottom: 1px solid var(--line); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; }
 .compact-table td { padding: 10px 12px; color: var(--body); border-bottom: 1px solid var(--line); font-size: .86rem; vertical-align: top; }
 .compact-table tbody tr:last-child td { border-bottom: 0; }
@@ -120,17 +120,14 @@ a { text-underline-offset: 3px; }
 .compact-table tbody tr:hover { background: rgba(114, 216, 255, .07); }
 .table-name { min-width: 190px; color: var(--text) !important; }
 .table-name strong, .table-subtitle { display: block; }
-.table-subtitle, .table-scope { color: var(--muted) !important; }
-.table-scope { min-width: 145px; }
-.table-package { min-width: 135px; }
+.table-subtitle { color: var(--muted) !important; }
 .table-money { min-width: 115px; color: var(--text) !important; font-weight: 850; white-space: nowrap; }
-.table-miles { min-width: 70px; white-space: nowrap; }
-.table-dealer { min-width: 190px; }
 .table-color { min-width: 120px; white-space: nowrap; }
 .table-color-dot { display: inline-block; width: 12px; height: 12px; margin-right: 7px; border: 1px solid rgba(255, 255, 255, .38); border-radius: 50%; vertical-align: -1px; }
 .table-url { min-width: 125px; }
 .table-link { display: inline-block; color: var(--blue); font-weight: 850; text-decoration: none; }
 .table-link:hover { text-decoration: underline; }
+.table-signal { min-width: 110px; }
 .table-detail-cell { min-width: 190px; }
 .table-details summary { font-size: .82rem; }
 .table-detail-list { margin-top: 9px; }
@@ -160,7 +157,7 @@ summary { color: var(--blue); cursor: pointer; font-weight: 800; }
   .evidence-content { grid-template-columns: 1fr; }
   .section-heading { align-items: start; }
   .table-wrap { -webkit-overflow-scrolling: touch; }
-  .compact-table { min-width: 980px; }
+  .compact-table { min-width: 760px; }
 }
 
 @media (max-width: 520px) {
