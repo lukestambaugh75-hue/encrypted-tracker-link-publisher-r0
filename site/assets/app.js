@@ -268,6 +268,33 @@ function renderResult(row) {
   return card;
 }
 
+function renderCompactRow(row) {
+  const line = element("tr");
+  const name = element("td", "table-name");
+  name.append(element("strong", null, row.name));
+  if (row.model && row.model !== row.name) name.append(element("span", "table-subtitle", row.model));
+
+  const scope = element("td", "table-scope", row.availability);
+  const estimate = element("td", "table-money", money(row.price));
+  const signal = element("td", "table-signal");
+  signal.append(badge(row.status, statusClass(row.status)));
+
+  const detailCell = element("td", "table-detail-cell");
+  const details = element("details", "table-details");
+  details.append(element("summary", null, "Details"));
+  const list = element("dl", "detail-list table-detail-list");
+  for (const [label, value] of [
+    ["Freshness", row.freshness],
+    ["Confidence", row.confidence],
+    ["Validation", row.validation],
+    ...Object.entries(row.details || {})
+  ]) list.append(element("dt", null, label), element("dd", null, value));
+  details.append(list);
+  detailCell.append(details);
+  line.append(name, scope, estimate, signal, detailCell);
+  return line;
+}
+
 function render(payload) {
   document.title = payload.title;
   const root = element("section", "dashboard");
@@ -294,6 +321,7 @@ function render(payload) {
   hero.append(heroCopy, recommendation);
 
   const prices = payload.rows.map(row => row.price).filter(value => typeof value === "number");
+  const compactTable = payload.presentation?.result_layout === "compact-table";
   const metrics = element("section", "metrics");
   const defaultMetricValues = [
     ["Lowest current price", prices.length ? money(Math.min(...prices)) : "Not shown"],
@@ -321,18 +349,23 @@ function render(payload) {
   );
 
   const picksSection = element("section", "content-section");
-  picksSection.append(
-    element("p", "eyebrow", payload.presentation?.featured_eyebrow || "BEST CURRENT OPTIONS"),
-    element("h2", null, payload.presentation?.featured_title || "Start with these")
-  );
-  const picks = element("div", "pick-grid");
-  for (const row of recommendationRows(payload.rows, payload.presentation?.featured_row_ids)) picks.append(renderPick(row));
-  picksSection.append(picks);
+  if (!compactTable) {
+    picksSection.append(
+      element("p", "eyebrow", payload.presentation?.featured_eyebrow || "BEST CURRENT OPTIONS"),
+      element("h2", null, payload.presentation?.featured_title || "Start with these")
+    );
+    const picks = element("div", "pick-grid");
+    for (const row of recommendationRows(payload.rows, payload.presentation?.featured_row_ids)) picks.append(renderPick(row));
+    picksSection.append(picks);
+  }
 
   const resultsSection = element("section", "content-section results-section");
   const resultsHeading = element("div", "section-heading");
   const headingCopy = element("div");
-  headingCopy.append(element("p", "eyebrow", "ALL VERIFIED RESULTS"), element("h2", null, "Compare every offer"));
+  headingCopy.append(
+    element("p", "eyebrow", compactTable ? "CURRENT COST LEDGER" : "ALL VERIFIED RESULTS"),
+    element("h2", null, compactTable ? "Compact cost table" : "Compare every offer")
+  );
   const matchCount = element("p", "match-count", `${payload.rows.length} shown`);
   resultsHeading.append(headingCopy, matchCount);
 
@@ -347,10 +380,28 @@ function render(payload) {
   for (const value of [...new Set(payload.rows.map(row => row.status))].sort()) status.append(new Option(value, value));
   const sort = element("select");
   sort.setAttribute("aria-label", "Sort results");
-  sort.append(new Option("Recommended order", "source"), new Option("Lowest price", "price"), new Option("Largest price drop", "drop"));
+  if (compactTable) {
+    sort.append(new Option("Source order", "source"), new Option("Highest cost", "cost-desc"), new Option("Lowest cost", "price"));
+  } else {
+    sort.append(new Option("Recommended order", "source"), new Option("Lowest price", "price"), new Option("Largest price drop", "drop"));
+  }
   controls.append(search, status, sort);
 
-  const results = element("div", "result-grid");
+  const results = compactTable ? element("div", "table-wrap") : element("div", "result-grid");
+  const tableBody = compactTable ? element("tbody") : null;
+  if (compactTable) {
+    const table = element("table", "compact-table");
+    const head = element("thead");
+    const headRow = element("tr");
+    for (const title of ["Cost line", "Scope", "Estimate", "Signal", "Details"]) {
+      const cell = element("th", null, title);
+      cell.scope = "col";
+      headRow.append(cell);
+    }
+    head.append(headRow);
+    table.append(head, tableBody);
+    results.append(table);
+  }
   function draw() {
     const needle = search.value.trim().toLowerCase();
     const wantedStatus = status.value;
@@ -360,10 +411,23 @@ function render(payload) {
       return (!needle || haystack.includes(needle)) && (!wantedStatus || row.status === wantedStatus);
     });
     if (sort.value === "price") rows = [...rows].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
+    if (sort.value === "cost-desc") rows = [...rows].sort((a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity));
     if (sort.value === "drop") rows = [...rows].sort((a, b) => (a.change ?? Infinity) - (b.change ?? Infinity));
-    results.replaceChildren();
-    for (const row of rows) results.append(renderResult(row));
-    if (!rows.length) results.append(element("p", "empty", "No offers match those filters."));
+    if (compactTable) {
+      tableBody.replaceChildren();
+      for (const row of rows) tableBody.append(renderCompactRow(row));
+      if (!rows.length) {
+        const empty = element("td", "table-empty", "No cost lines match those filters.");
+        empty.colSpan = 5;
+        const emptyRow = element("tr");
+        emptyRow.append(empty);
+        tableBody.append(emptyRow);
+      }
+    } else {
+      results.replaceChildren();
+      for (const row of rows) results.append(renderResult(row));
+      if (!rows.length) results.append(element("p", "empty", "No offers match those filters."));
+    }
     matchCount.textContent = `${rows.length} shown`;
   }
   search.addEventListener("input", draw);
@@ -382,7 +446,8 @@ function render(payload) {
   technical.append(technicalList);
 
   const footer = element("footer", "footer", "Confirm final price, stock, seller identity, delivery timing and product fit before buying.");
-  root.append(hero, metrics, freshness, picksSection, resultsSection, technical, footer);
+  if (compactTable) root.append(hero, metrics, freshness, resultsSection, technical, footer);
+  else root.append(hero, metrics, freshness, picksSection, resultsSection, technical, footer);
   app.replaceChildren(root);
   draw();
 }
