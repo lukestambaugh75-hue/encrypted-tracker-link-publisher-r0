@@ -314,6 +314,21 @@ function renderCompactRow(row) {
   return line;
 }
 
+function renderInsights(payload) {
+  const sections = Array.isArray(payload.insights) ? payload.insights : [];
+  if (!sections.length) return null;
+  const section = element("section", "insights");
+  for (const insight of sections) {
+    const card = element("article", "insight-card");
+    card.append(element("p", "eyebrow", insight.title));
+    const list = element("ul", "insight-list");
+    for (const item of insight.items || []) list.append(element("li", null, item));
+    card.append(list);
+    section.append(card);
+  }
+  return section;
+}
+
 function render(payload) {
   document.title = payload.title;
   const root = element("section", "dashboard");
@@ -386,6 +401,7 @@ function render(payload) {
     element("p", "eyebrow", "SOURCE FRESHNESS"),
     element("strong", null, friendlyText(payload.source_freshness))
   );
+  const insights = renderInsights(payload);
 
   const picksSection = element("section", "content-section");
   if (!compactTable) {
@@ -485,8 +501,9 @@ function render(payload) {
   technical.append(technicalList);
 
   const footer = element("footer", "footer", "Confirm final price, stock, seller identity, delivery timing and product fit before buying.");
-  if (compactTable) root.append(hero, metrics, freshness, resultsSection, technical, footer);
-  else root.append(hero, metrics, freshness, picksSection, resultsSection, technical, footer);
+  const leading = [hero, metrics, freshness, insights].filter(Boolean);
+  if (compactTable) root.append(...leading, resultsSection, technical, footer);
+  else root.append(...leading, picksSection, resultsSection, technical, footer);
   app.replaceChildren(root);
   draw();
 }
