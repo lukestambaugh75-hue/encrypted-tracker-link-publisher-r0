@@ -64,6 +64,9 @@ a { text-underline-offset: 3px; }
 .summary-table { width: 100%; border-collapse: collapse; text-align: left; }
 .summary-table th { padding: 9px 12px; color: var(--blue); background: var(--panel-2); border-bottom: 1px solid var(--line); font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
 .summary-table td { padding: 11px 12px; color: var(--text); font-size: 1.05rem; font-weight: 850; white-space: nowrap; }
+.table-photo-frame { margin: 0; padding: 10px; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.table-photo { display: block; width: 100%; min-width: 760px; height: auto; border-radius: 8px; }
+.table-photo-frame figcaption { padding: 10px 4px 2px; color: var(--muted); font-size: .8rem; }
 
 .freshness { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; margin: 0 0 28px; padding: 18px; border: 1px solid var(--line); border-left: 4px solid var(--blue); border-radius: 10px; background: var(--panel); }
 .freshness.good { border-left-color: var(--green); }

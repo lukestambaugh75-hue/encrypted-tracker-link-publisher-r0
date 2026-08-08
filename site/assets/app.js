@@ -131,6 +131,27 @@ function friendlyText(value) {
   );
 }
 
+function renderTableImage(payload) {
+  const tableImage = payload.presentation?.table_image;
+  if (!tableImage) return null;
+  const section = element("section", "content-section table-photo-section");
+  section.append(
+    element("p", "eyebrow", "ENCRYPTED TABLE PHOTO"),
+    element("h2", null, "Decision tables at a glance")
+  );
+  const frame = element("figure", "table-photo-frame");
+  const image = element("img", "table-photo");
+  image.src = tableImage.data_uri;
+  image.alt = tableImage.alt;
+  image.width = tableImage.width;
+  image.height = tableImage.height;
+  image.decoding = "async";
+  frame.append(image);
+  if (tableImage.caption) frame.append(element("figcaption", null, tableImage.caption));
+  section.append(frame);
+  return section;
+}
+
 function statusClass(value) {
   const text = String(value || "").toLowerCase();
   if (/blocked|stale|unavailable|stop/.test(text)) return "danger";
@@ -402,6 +423,7 @@ function render(payload) {
     element("strong", null, friendlyText(payload.source_freshness))
   );
   const insights = renderInsights(payload);
+  const tableImage = renderTableImage(payload);
 
   const picksSection = element("section", "content-section");
   if (!compactTable) {
@@ -501,7 +523,7 @@ function render(payload) {
   technical.append(technicalList);
 
   const footer = element("footer", "footer", "Confirm final price, stock, seller identity, delivery timing and product fit before buying.");
-  const leading = [hero, metrics, freshness, insights].filter(Boolean);
+  const leading = [hero, metrics, freshness, insights, tableImage].filter(Boolean);
   if (compactTable) root.append(...leading, resultsSection, technical, footer);
   else root.append(...leading, picksSection, resultsSection, technical, footer);
   app.replaceChildren(root);
